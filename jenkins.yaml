@@ -1,0 +1,131 @@
+apiVersion: apps.openshift.io/v1
+kind: DeploymentConfig
+metadata:
+  annotations:
+    template.alpha.openshift.io/wait-for-ready: 'true'
+  creationTimestamp: '2018-02-27T17:50:27Z'
+  generation: 2
+  labels:
+    app: jenkins-persistent
+    template: jenkins-persistent-template
+  name: jenkins
+  namespace: start-template
+  resourceVersion: '1160'
+  selfLink: >-
+    /apis/apps.openshift.io/v1/namespaces/start-template/deploymentconfigs/jenkins
+  uid: b1eb045f-1be6-11e8-b4ae-025000000001
+spec:
+  replicas: 1
+  selector:
+    name: jenkins
+  strategy:
+    activeDeadlineSeconds: 21600
+    recreateParams:
+      timeoutSeconds: 600
+    resources: {}
+    type: Recreate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        name: jenkins
+    spec:
+      containers:
+        - env:
+            - name: OPENSHIFT_ENABLE_OAUTH
+              value: 'true'
+            - name: OPENSHIFT_ENABLE_REDIRECT_PROMPT
+              value: 'true'
+            - name: KUBERNETES_MASTER
+              value: 'https://kubernetes.default:443'
+            - name: KUBERNETES_TRUST_CERTIFICATES
+              value: 'true'
+            - name: JENKINS_SERVICE_NAME
+              value: jenkins
+            - name: JNLP_SERVICE_NAME
+              value: jenkins-jnlp
+          image: >-
+            openshift/jenkins-2-centos7@sha256:21b98bfdad0254537c624b3db27f87761b72b5ecf7fe6a84617e7ac58f2f4af3
+          imagePullPolicy: IfNotPresent
+          livenessProbe:
+            failureThreshold: 30
+            httpGet:
+              path: /login
+              port: 8080
+              scheme: HTTP
+            initialDelaySeconds: 420
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 3
+          name: jenkins
+          readinessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /login
+              port: 8080
+              scheme: HTTP
+            initialDelaySeconds: 3
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 3
+          resources:
+            limits:
+              memory: 512Mi
+          securityContext:
+            capabilities: {}
+            privileged: false
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+            - mountPath: /var/lib/jenkins
+              name: jenkins-data
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      serviceAccount: jenkins
+      serviceAccountName: jenkins
+      terminationGracePeriodSeconds: 30
+      volumes:
+        - name: jenkins-data
+          persistentVolumeClaim:
+            claimName: jenkins
+  test: false
+  triggers:
+    - imageChangeParams:
+        automatic: true
+        containerNames:
+          - jenkins
+        from:
+          kind: ImageStreamTag
+          name: 'jenkins:latest'
+          namespace: openshift
+        lastTriggeredImage: >-
+          openshift/jenkins-2-centos7@sha256:21b98bfdad0254537c624b3db27f87761b72b5ecf7fe6a84617e7ac58f2f4af3
+      type: ImageChange
+    - type: ConfigChange
+status:
+  availableReplicas: 0
+  conditions:
+    - lastTransitionTime: '2018-02-27T17:50:27Z'
+      lastUpdateTime: '2018-02-27T17:50:27Z'
+      message: Deployment config does not have minimum availability.
+      status: 'False'
+      type: Available
+    - lastTransitionTime: '2018-02-27T17:50:28Z'
+      lastUpdateTime: '2018-02-27T17:50:28Z'
+      message: >-
+        replication controller "jenkins-1" is waiting for pod "jenkins-1-deploy"
+        to run
+      status: Unknown
+      type: Progressing
+  details:
+    causes:
+      - type: ConfigChange
+    message: config change
+  latestVersion: 1
+  observedGeneration: 2
+  replicas: 0
+  unavailableReplicas: 0
+  updatedReplicas: 0
+
